@@ -1,0 +1,228 @@
+property_targets:
+  pack:
+    required:
+      - code: batt_type
+        unit: null
+        data_type: string
+      - code: nominal_voltage
+        unit: V
+        data_type: number
+      - code: nominal_capacity
+        unit: Ah
+        data_type: number
+      - code: nominal_energy
+        unit: kWh
+        data_type: number
+    optional:
+      - code: weight
+        unit: kg
+        data_type: number
+      - code: dimensions_length
+        unit: mm
+        data_type: number
+      - code: dimensions_width
+        unit: mm
+        data_type: number
+      - code: dimensions_height
+        unit: mm
+        data_type: number
+      - code: chemistry
+        unit: null
+        data_type: string
+      - code: manufacturer
+        unit: null
+        data_type: string
+      - code: part_number_service
+        unit: null
+        data_type: string
+      - code: part_number_superseded
+        unit: null
+        data_type: string
+      - code: oem_part_number
+        unit: null
+        data_type: string
+      - code: warranty_months
+        unit: months
+        data_type: integer
+      - code: coolant_type
+        unit: null
+        data_type: string
+      - code: cooling_system
+        unit: null
+        data_type: string
+      - code: ip_rating
+        unit: null
+        data_type: string
+      - code: thermal_management
+        unit: null
+        data_type: string
+      - code: bms_canbus
+        unit: null
+        data_type: boolean
+      - code: module_count
+        unit: null
+        data_type: integer
+      - code: cell_count
+        unit: null
+        data_type: integer
+      - code: cell_format
+        unit: null
+        data_type: string
+      - code: cycle_life
+        unit: cycles
+        data_type: integer
+      - code: soc_window_min
+        unit: percent
+        data_type: number
+      - code: soc_window_max
+        unit: percent
+        data_type: number
+      - code: max_charge_rate
+        unit: kW
+        data_type: number
+      - code: max_discharge_rate
+        unit: kW
+        data_type: number
+      - code: operating_temp_min
+        unit: "°C"
+        data_type: number
+      - code: operating_temp_max
+        unit: "°C"
+        data_type: number
+      - code: communication_protocol
+        unit: null
+        data_type: string
+      - code: diagnostic_port
+        unit: null
+        data_type: string
+      - code: grounding_type
+        unit: null
+        data_type: string
+      - code: application
+        unit: null
+        data_type: string
+      - code: compatible_model
+        unit: null
+        data_type: string
+
+  hv_module:
+    required:
+      - code: nominal_voltage
+        unit: V
+        data_type: number
+      - code: nominal_capacity
+        unit: Ah
+        data_type: number
+      - code: nominal_energy
+        unit: kWh
+        data_type: number
+    optional:
+      - code: chemistry
+        unit: null
+        data_type: string
+      - code: manufacturer
+        unit: null
+        data_type: string
+      - code: part_number_service
+        unit: null
+        data_type: string
+      - code: weight
+        unit: kg
+        data_type: number
+      - code: module_count
+        unit: null
+        data_type: integer
+      - code: cell_count
+        unit: null
+        data_type: integer
+      - code: cell_format
+        unit: null
+        data_type: string
+      - code: cycle_life
+        unit: cycles
+        data_type: integer
+      - code: max_charge_rate
+        unit: kW
+        data_type: number
+      - code: max_discharge_rate
+        unit: kW
+        data_type: number
+      - code: thermal_management
+        unit: null
+        data_type: string
+      - code: communication_protocol
+        unit: null
+        data_type: string
+      - code: coolant_type
+        unit: null
+        data_type: string
+      - code: dimensions_length
+        unit: mm
+        data_type: number
+      - code: dimensions_width
+        unit: mm
+        data_type: number
+      - code: dimensions_height
+        unit: mm
+        data_type: number
+      - code: compatible_pack
+        unit: null
+        data_type: string
+      - code: application
+        unit: null
+        data_type: string
+
+  hv_cell:
+    required:
+      - code: nominal_voltage
+        unit: V
+        data_type: number
+      - code: nominal_capacity
+        unit: Ah
+        data_type: number
+      - code: chemistry
+        unit: null
+        data_type: string
+      - code: cell_format
+        unit: null
+        data_type: string
+    optional:
+      - code: nominal_energy
+        unit: Wh
+        data_type: number
+      - code: weight
+        unit: kg
+        data_type: number
+      - code: manufacturer
+        unit: null
+        data_type: string
+      - code: part_number_service
+        unit: null
+        data_type: string
+      - code: cycle_life
+        unit: cycles
+        data_type: integer
+      - code: max_charge_rate
+        unit: A
+        data_type: number
+      - code: max_discharge_rate
+        unit: A
+        data_type: number
+      - code: internal_resistance
+        unit: mOhm
+        data_type: number
+      - code: thermal_management
+        unit: null
+        data_type: string
+      - code: dimensions_length
+        unit: mm
+        data_type: number
+      - code: dimensions_width
+        unit: mm
+        data_type: number
+      - code: dimensions_height
+        unit: mm
+        data_type: number
+      - code: compatible_module
+        unit: null
+        data_type: string

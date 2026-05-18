@@ -1,0 +1,72 @@
+wave_policies:
+  teile_com:
+    waves: 3
+    wave_delays_seconds: [0, 300, 900]
+    jitter_seconds: 30
+    escalation_threshold: 0.4
+    quorum_required: 2
+    fetcher_priority: ["crawl4ai", "scrapling", "camoufox"]
+
+  webautocats:
+    waves: 3
+    wave_delays_seconds: [0, 600, 1800]
+    jitter_seconds: 60
+    escalation_threshold: 0.5
+    quorum_required: 2
+    fetcher_priority: ["scrapling", "crawl4ai"]
+
+  jl_parts:
+    waves: 2
+    wave_delays_seconds: [0, 600]
+    jitter_seconds: 45
+    escalation_threshold: 0.4
+    quorum_required: 1
+    fetcher_priority: ["crawl4ai", "scrapling"]
+
+  evshop:
+    waves: 2
+    wave_delays_seconds: [0, 300]
+    jitter_seconds: 20
+    escalation_threshold: 0.5
+    quorum_required: 1
+    fetcher_priority: ["scrapling", "camoufox"]
+
+  rrr_lt:
+    waves: 2
+    wave_delays_seconds: [0, 600]
+    jitter_seconds: 60
+    escalation_threshold: 0.4
+    quorum_required: 1
+    fetcher_priority: ["crawl4ai", "scrapling"]
+
+  proxyparts:
+    waves: 3
+    wave_delays_seconds: [0, 300, 900]
+    jitter_seconds: 30
+    escalation_threshold: 0.6
+    quorum_required: 2
+    fetcher_priority: ["camoufox", "crawl4ai"]
+
+  topix:
+    waves: 3
+    wave_delays_seconds: [0, 600, 1800]
+    jitter_seconds: 120
+    escalation_threshold: 0.5
+    quorum_required: 2
+    fetcher_priority: ["crawl4ai"]
+
+  nhtsa:
+    waves: 1
+    wave_delays_seconds: [0]
+    jitter_seconds: 10
+    escalation_threshold: 0.3
+    quorum_required: 1
+    fetcher_priority: ["crawl4ai", "scrapling"]
+
+default_policy:
+  waves: 2
+  wave_delays_seconds: [0, 600]
+  jitter_seconds: 60
+  escalation_threshold: 0.5
+  quorum_required: 1
+  fetcher_priority: ["crawl4ai"]
