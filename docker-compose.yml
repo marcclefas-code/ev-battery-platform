@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  ev-battery-api:
+    build: .
+    ports:
+      - "8090:8090"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - HATCHET_CLIENT_TOKEN=${HATCHET_CLIENT_TOKEN}
+      - HATCHET_CLIENT_HOST_PORT=${HATCHET_CLIENT_HOST_PORT}
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL}
+      - CRAWL4AI_URL=${CRAWL4AI_URL}
+      - REDIS_URL=${REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - ev-battery-net
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=ev_battery_user
+      - POSTGRES_PASSWORD=ev_battery_pass
+      - POSTGRES_DB=ev_battery
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - ev-battery-net
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - ev-battery-net
+
+networks:
+  ev-battery-net:
+    driver: bridge
+
+volumes:
+  pgdata:
