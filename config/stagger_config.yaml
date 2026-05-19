@@ -47,13 +47,13 @@ wave_policies:
     quorum_required: 2
     fetcher_priority: ["camoufox", "crawl4ai"]
 
-  topix:
-    waves: 3
-    wave_delays_seconds: [0, 600, 1800]
-    jitter_seconds: 120
+  topix_jaguarlandrover_com:
+    waves: 1
+    wave_delays_seconds: [0]
+    jitter_seconds: 30
     escalation_threshold: 0.5
-    quorum_required: 2
-    fetcher_priority: ["crawl4ai"]
+    quorum_required: 1
+    fetcher_priority: ["camoufox"]
 
   nhtsa:
     waves: 1
