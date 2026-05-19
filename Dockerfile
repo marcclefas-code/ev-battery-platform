@@ -13,8 +13,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONPATH=/app
-ENV DATABASE_URL=${DATABASE_URL}
 
 EXPOSE 8090
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8090"]
+COPY scripts/start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
+
+CMD ["/usr/local/bin/start.sh"]
