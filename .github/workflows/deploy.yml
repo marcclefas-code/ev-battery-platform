@@ -38,8 +38,17 @@ jobs:
             docker build -t ev-battery-platform:latest .
 
             # Stop and remove old container (ignore errors)
-            docker stop ev-battery-api 2>/dev/null || true
-            docker rm ev-battery-api 2>/dev/null || true
+            docker rm -f ev-battery-api 2>/dev/null || true
+            sleep 2
+
+            # Kill any process using port 8090
+            fuser -k 8090/tcp 2>/dev/null || true
+            ss -tlnp 2>/dev/null | grep ':8090 ' && kill -9 $(ss -tlnp 2>/dev/null | grep ':8090 ' | awk '{print $7}' | grep -oP '\d+' | head -1) 2>/dev/null || true
+            sleep 1
+
+            # Export secrets for docker run
+            export HATCHET_TOKEN='${{ secrets.HATCHET_CLIENT_TOKEN }}'
+            export SECRET_KEY='${{ secrets.SECRET_KEY }}'
 
             # Run new container on intelligence-internal network so it can reach:
             # - intelligence-enrichment-crm-db:5432 (PostgreSQL)
@@ -51,11 +60,11 @@ jobs:
               --network=intelligence-internal \
               -p 8090:8090 \
               -e DATABASE_URL="postgresql://ev_battery_user:ev_battery_pass@intelligence-enrichment-crm-db:5432/ev_battery" \
-              -e HATCHET_CLIENT_TOKEN="${{ secrets.HATCHET_CLIENT_TOKEN }}" \
+              -e HATCHET_CLIENT_TOKEN="$HATCHET_TOKEN" \
               -e HATCHET_CLIENT_HOST_PORT="hatchet-hatchet-engine-1:7070" \
               -e HATCHET_CLIENT_TLS_STRATEGY="none" \
               -e LITELLM_BASE_URL="http://intelligence-litellm:4000/v1" \
-              -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+              -e SECRET_KEY="$SECRET_KEY" \
               ev-battery-platform:latest
 
       - name: Smoke test after deploy
