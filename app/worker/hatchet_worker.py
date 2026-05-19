@@ -111,7 +111,7 @@ class EVBatteryWorker:
                 if wave_1_result.get("payload"):
                     payloads.append(BatteryScrapePayload(**wave_1_result["payload"]))
 
-                merge_result = self.merger.merge_payloads(payloads)
+                merge_result = await self.merger.merge_payloads(payloads)
 
                 if merge_result["merged"]:
                     await self.enrichment_service.persist_merged_payload(

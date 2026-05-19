@@ -14,62 +14,69 @@ class TestConsensusMerger:
             properties={k: PropertyItem(**v) for k, v in (props or {}).items()},
         )
 
-    def test_merge_empty_payloads(self):
-        result = self.merger.merge_payloads([])
+    @pytest.mark.asyncio
+    async def test_merge_empty_payloads(self):
+        result = await self.merger.merge_payloads([])
         assert result['merged'] is None
         assert result['score'] == 0.0
 
-    def test_merge_single_payload(self):
+    @pytest.mark.asyncio
+    async def test_merge_single_payload(self):
         payload = self._make_payload(
             pns=[{'raw': 'ABC123', 'normalized': 'ABC123', 'brand': 'porsche'}],
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.9}},
         )
-        result = self.merger.merge_payloads([payload])
+        result = await self.merger.merge_payloads([payload])
         assert result['merged'] is not None
         assert result['score'] > 0.0
         assert len(result['merged']['part_numbers']) == 1
         assert result['merged']['properties']['nominal_voltage']['value'] == 400
 
-    def test_merge_deduplicates_part_numbers(self):
+    @pytest.mark.asyncio
+    async def test_merge_deduplicates_part_numbers(self):
         p1 = self._make_payload(pns=[{'raw': 'ABC123', 'normalized': 'ABC123', 'brand': 'porsche'}])
         p2 = self._make_payload(pns=[{'raw': 'ABC123', 'normalized': 'ABC123', 'brand': 'porsche'}])
-        result = self.merger.merge_payloads([p1, p2])
+        result = await self.merger.merge_payloads([p1, p2])
         assert len(result['merged']['part_numbers']) == 1
 
-    def test_merge_takes_higher_confidence_property(self):
+    @pytest.mark.asyncio
+    async def test_merge_takes_higher_confidence_property(self):
         p1 = self._make_payload(
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.5}}
         )
         p2 = self._make_payload(
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.9}}
         )
-        result = self.merger.merge_payloads([p1, p2])
+        result = await self.merger.merge_payloads([p1, p2])
         assert result['merged']['properties']['nominal_voltage']['confidence'] == 0.9
 
-    def test_detects_conflict_on_different_values(self):
+    @pytest.mark.asyncio
+    async def test_detects_conflict_on_different_values(self):
         p1 = self._make_payload(
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.8}}
         )
         p2 = self._make_payload(
             props={'nominal_voltage': {'value': 420, 'unit': 'V', 'confidence': 0.8}}
         )
-        result = self.merger.merge_payloads([p1, p2])
+        result = await self.merger.merge_payloads([p1, p2])
         assert len(result['conflicts']) == 1
         assert result['conflicts'][0]['field'] == 'nominal_voltage'
         assert '400' in result['conflicts'][0]['conflicting_values']
         assert '420' in result['conflicts'][0]['conflicting_values']
 
-    def test_no_conflict_on_same_values(self):
+    @pytest.mark.asyncio
+    async def test_no_conflict_on_same_values(self):
         p1 = self._make_payload(
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.8}}
         )
         p2 = self._make_payload(
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.9}}
         )
-        result = self.merger.merge_payloads([p1, p2])
+        result = await self.merger.merge_payloads([p1, p2])
         assert len(result['conflicts']) == 0
 
-    def test_consensus_score_reflects_agreement(self):
+    @pytest.mark.asyncio
+    async def test_consensus_score_reflects_agreement(self):
         p1 = self._make_payload(
             pns=[{'raw': 'ABC123', 'normalized': 'ABC123', 'brand': 'porsche'}],
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.9}},
@@ -78,10 +85,11 @@ class TestConsensusMerger:
             pns=[{'raw': 'ABC123', 'normalized': 'ABC123', 'brand': 'porsche'}],
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.9}},
         )
-        result = self.merger.merge_payloads([p1, p2])
+        result = await self.merger.merge_payloads([p1, p2])
         assert result['score'] > 0.6
 
-    def test_winning_payload_has_most_data(self):
+    @pytest.mark.asyncio
+    async def test_winning_payload_has_most_data(self):
         p1 = self._make_payload(
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.5}}
         )
@@ -89,5 +97,5 @@ class TestConsensusMerger:
             pns=[{'raw': 'ABC123', 'normalized': 'ABC123', 'brand': 'porsche'}],
             props={'nominal_voltage': {'value': 400, 'unit': 'V', 'confidence': 0.5}, 'nominal_capacity': {'value': 60, 'unit': 'Ah', 'confidence': 0.5}},
         )
-        result = self.merger.merge_payloads([p1, p2])
+        result = await self.merger.merge_payloads([p1, p2])
         assert 'nominal_capacity' in result['merged']['properties']

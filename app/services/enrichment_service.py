@@ -52,7 +52,7 @@ class EnrichmentService:
             )
 
     async def merge_and_record_consensus(self, plan_id: uuid.UUID, payloads: list[BatteryScrapePayload], winning_attempt_id: Optional[uuid.UUID] = None):
-        merge_result = self.merger.merge_payloads(payloads)
+        merge_result = await self.merger.merge_payloads(payloads)
 
         async with get_db_session() as session:
             plan_repo = ScrapePlanRepository(session)
