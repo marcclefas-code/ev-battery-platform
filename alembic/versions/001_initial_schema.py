@@ -204,17 +204,17 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     )
-    op.execute(""""
-        CREATE MATERIALIZED VIEW IF NOT EXISTS battery_cross_reference_search AS
-        SELECT e.id AS entity_id, e.entity_type, e.canonical_name, e.status, e.normalized_primary_part_number,
-        pn.brand, COALESCE(pn.trust_weight, 0.5) AS primary_pn_trust,
-        (SELECT AVG(ps.confidence) FROM property_statement ps WHERE ps.entity_id = e.id AND ps.status = 'confirmed') AS avg_confidence,
-        (SELECT COUNT(*) FROM property_statement ps WHERE ps.entity_id = e.id AND ps.status = 'confirmed') AS confirmed_props_count,
-        e.occurrence_count,
-        e.created_at, e.updated_at
-        FROM battery_entity e
-        LEFT JOIN battery_part_number pn ON pn.entity_id = e.id AND pn.pn_type = 'service'
-    """)
+    mv_sql = (
+        "CREATE MATERIALIZED VIEW IF NOT EXISTS battery_cross_reference_search AS "
+        "SELECT e.id AS entity_id, e.entity_type, e.canonical_name, e.status, e.normalized_primary_part_number, "
+        "pn.brand, COALESCE(pn.trust_weight, 0.5) AS primary_pn_trust, "
+        "(SELECT AVG(ps.confidence) FROM property_statement ps WHERE ps.entity_id = e.id AND ps.status = 'confirmed') AS avg_confidence, "
+        "(SELECT COUNT(*) FROM property_statement ps WHERE ps.entity_id = e.id AND ps.status = 'confirmed') AS confirmed_props_count, "
+        "e.occurrence_count, e.created_at, e.updated_at "
+        "FROM battery_entity e "
+        "LEFT JOIN battery_part_number pn ON pn.entity_id = e.id AND pn.pn_type = 'service'"
+    )
+    op.execute(mv_sql)
     op.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_battery_xref_entity ON battery_cross_reference_search(entity_id)")
 
 
