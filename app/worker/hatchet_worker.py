@@ -44,15 +44,13 @@ def load_stagger_config() -> dict:
 
 
 def create_hatchet_worker() -> Worker:
-    tls_config = None
-    if HATCHET_CLIENT_TLS_STRATEGY != "none":
-        tls_config = ClientTLSConfig(
-            tls_strategy=HATCHET_CLIENT_TLS_STRATEGY,
-            cert_file="",
-            key_file="",
-            ca_file="",
-            server_name="",
-        )
+    tls_config = ClientTLSConfig(
+        tls_strategy=HATCHET_CLIENT_TLS_STRATEGY,
+        cert_file="",
+        key_file="",
+        ca_file="",
+        server_name="",
+    )
 
     config = ClientConfig(
         token=HATCHET_CLIENT_TOKEN,
