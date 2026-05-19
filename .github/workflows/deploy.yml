@@ -46,42 +46,16 @@ jobs:
               docker rm -f ev-battery-api 2>/dev/null || true
             fi
 
-            # Wait for port 8090 to be free (up to 15s)
-            for i in $(seq 1 15); do
-              if ss -tlnp 2>/dev/null | grep -q ':8090 '; then
-                echo "Port 8090 still in use, waiting... ($i/15)"
-                sleep 1
-              else
-                echo "Port 8090 is free"
-                break
-              fi
-            done
-
-            # Kill any process still holding port 8090 using full path
-            /usr/bin/fuser -k 8090/tcp 2>/dev/null || true
-            sleep 2
-
-            # Verify port is free before starting container
-            if ss -tlnp 2>/dev/null | grep -q ':8090 '; then
-              echo "ERROR: Port 8090 still in use after cleanup. Dumping port info:"
-              ss -tlnp | grep 8090 || true
-              docker ps -a | grep ev-battery || true
-              exit 1
-            fi
-
             # Export secrets for docker run
             export HATCHET_TOKEN='${{ secrets.HATCHET_CLIENT_TOKEN }}'
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
 
-            # Run new container on intelligence-internal network so it can reach:
-            # - intelligence-enrichment-crm-db:5432 (PostgreSQL)
-            # - hatchet-hatchet-engine-1:7070 (Hatchet engine)
-            # - intelligence-litellm:4000 (LiteLLM)
+            # Run container with host networking so port 8090 binds directly on host.
+            # Then attach to intelligence-internal for DB/Hatchet reachability.
             docker run -d \
               --name ev-battery-api \
               --restart unless-stopped \
-              --network=intelligence-internal \
-              -p 8090:8090 \
+              --network=host \
               -e DATABASE_URL="postgresql://ev_battery_user:ev_battery_pass@intelligence-enrichment-crm-db:5432/ev_battery" \
               -e HATCHET_CLIENT_TOKEN="$HATCHET_TOKEN" \
               -e HATCHET_CLIENT_HOST_PORT="hatchet-hatchet-engine-1:7070" \
@@ -89,6 +63,9 @@ jobs:
               -e LITELLM_BASE_URL="http://intelligence-litellm:4000/v1" \
               -e SECRET_KEY="$SECRET_KEY" \
               ev-battery-platform:latest
+
+            # Attach to intelligence-internal so app can reach DB, Hatchet, LiteLLM
+            docker network connect intelligence-internal ev-battery-api 2>/dev/null || true
 
       - name: Smoke test after deploy
         run: |
