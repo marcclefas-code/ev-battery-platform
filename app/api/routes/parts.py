@@ -6,14 +6,14 @@ from sqlalchemy import select
 from app.services.database import get_db_session
 from app.models.part_number import BatteryPartNumber
 from app.models.vehicle_variant_code import VehicleVariantCode
-from app.api.middleware.auth import ReadOnly
+from app.api.middleware.auth import read_only
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/parts", tags=["parts"])
 
 
 @router.get("/")
-async def list_parts(brand: Optional[str] = None, page: int = 1, page_size: int = 50, _: dict = Depends(ReadOnly())):
+async def list_parts(brand: Optional[str] = None, page: int = 1, page_size: int = 50, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         query = select(BatteryPartNumber)
         if brand:
@@ -25,7 +25,7 @@ async def list_parts(brand: Optional[str] = None, page: int = 1, page_size: int 
 
 
 @router.get("/{part_id}")
-async def get_part(part_id: str, _: dict = Depends(ReadOnly())):
+async def get_part(part_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(select(BatteryPartNumber).where(BatteryPartNumber.id == uuid.UUID(part_id)))
         part = result.scalar_one_or_none()
@@ -35,7 +35,7 @@ async def get_part(part_id: str, _: dict = Depends(ReadOnly())):
 
 
 @router.get("/{part_id}/fitment")
-async def get_part_fitment(part_id: str, _: dict = Depends(ReadOnly())):
+async def get_part_fitment(part_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(select(BatteryPartNumber).where(BatteryPartNumber.id == uuid.UUID(part_id)))
         part = result.scalar_one_or_none()
@@ -49,7 +49,7 @@ async def get_part_fitment(part_id: str, _: dict = Depends(ReadOnly())):
 
 
 @router.get("/{part_id}/supersession")
-async def get_part_supersession(part_id: str, _: dict = Depends(ReadOnly())):
+async def get_part_supersession(part_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(select(BatteryPartNumber).where(BatteryPartNumber.id == uuid.UUID(part_id)))
         part = result.scalar_one_or_none()

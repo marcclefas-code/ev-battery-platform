@@ -2,6 +2,7 @@ import os
 import asyncio
 import structlog
 from datetime import datetime
+import uuid
 import yaml
 
 from hatchet import Hatchet

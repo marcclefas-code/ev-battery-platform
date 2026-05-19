@@ -10,7 +10,7 @@ from app.services.fetcher_registry import FetcherRegistry
 from app.services.extractor import ExtractionEngine
 from app.services.consensus_merger import ConsensusMerger
 from app.schemas.battery_scrape_payload import BatteryScrapePayload
-from app.api.middleware.auth import ReadOnly, OperatorOrAdmin
+from app.api.middleware.auth import read_only, operator_or_admin
 from app.brand_adapters.porsche_adapter import PorscheAdapter
 import os
 import asyncio
@@ -34,7 +34,7 @@ class ScrapeResponse(BaseModel):
 
 
 @router.post("/", response_model=ScrapeResponse)
-async def create_scrape_plan(req: ScrapeRequest, _: dict = Depends(OperatorOrAdmin())):
+async def create_scrape_plan(req: ScrapeRequest, _: dict = Depends(operator_or_admin)):
     async with get_db_session() as session:
         plan_repo = ScrapePlanRepository(session)
         entity_id = uuid.UUID(req.entity_id) if req.entity_id else uuid.uuid4()
@@ -51,7 +51,7 @@ async def create_scrape_plan(req: ScrapeRequest, _: dict = Depends(OperatorOrAdm
 
 
 @router.get("/{plan_id}")
-async def get_scrape_plan(plan_id: str, _: dict = Depends(ReadOnly())):
+async def get_scrape_plan(plan_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         plan_repo = ScrapePlanRepository(session)
         plan = await plan_repo.get_by_id(uuid.UUID(plan_id))
@@ -70,7 +70,7 @@ async def get_scrape_plan(plan_id: str, _: dict = Depends(ReadOnly())):
 
 
 @router.get("/{plan_id}/attempts")
-async def get_scrape_attempts(plan_id: str, _: dict = Depends(ReadOnly())):
+async def get_scrape_attempts(plan_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         plan_repo = ScrapePlanRepository(session)
         attempts = await plan_repo.get_attempts_for_plan(uuid.UUID(plan_id))

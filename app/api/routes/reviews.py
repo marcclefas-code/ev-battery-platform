@@ -4,7 +4,7 @@ import structlog
 from sqlalchemy import select
 from app.services.database import get_db_session
 from app.models.enrichment_review_task import EnrichmentReviewTask
-from app.api.middleware.auth import ReadOnly, OperatorOrAdmin
+from app.api.middleware.auth import read_only, operator_or_admin
 from datetime import datetime
 import uuid
 
@@ -18,7 +18,7 @@ class UpdateReviewTask(BaseModel):
 
 
 @router.get("/")
-async def list_review_tasks(status: str = "open", _: dict = Depends(ReadOnly())):
+async def list_review_tasks(status: str = "open", _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(
             select(EnrichmentReviewTask)
@@ -36,7 +36,7 @@ async def list_review_tasks(status: str = "open", _: dict = Depends(ReadOnly()))
 
 
 @router.get("/{task_id}")
-async def get_review_task(task_id: str, _: dict = Depends(ReadOnly())):
+async def get_review_task(task_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(select(EnrichmentReviewTask).where(EnrichmentReviewTask.id == uuid.UUID(task_id)))
         task = result.scalar_one_or_none()
@@ -46,7 +46,7 @@ async def get_review_task(task_id: str, _: dict = Depends(ReadOnly())):
 
 
 @router.patch("/{task_id}")
-async def update_review_task(task_id: str, body: UpdateReviewTask, _: dict = Depends(OperatorOrAdmin())):
+async def update_review_task(task_id: str, body: UpdateReviewTask, _: dict = Depends(operator_or_admin)):
     async with get_db_session() as session:
         result = await session.execute(select(EnrichmentReviewTask).where(EnrichmentReviewTask.id == uuid.UUID(task_id)))
         task = result.scalar_one_or_none()

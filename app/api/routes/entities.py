@@ -4,7 +4,7 @@ import uuid
 import structlog
 from app.services.database import get_db_session
 from app.services.repositories.battery_entity_repo import BatteryEntityRepository
-from app.api.middleware.auth import ReadOnly, OperatorOrAdmin
+from app.api.middleware.auth import read_only, operator_or_admin
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/entities", tags=["entities"])
@@ -16,7 +16,7 @@ async def list_entities(
     brand: Optional[str] = None,
     page: int = 1,
     page_size: int = 50,
-    _: dict = Depends(ReadOnly()),
+    _: dict = Depends(read_only),
 ):
     async with get_db_session() as session:
         repo = BatteryEntityRepository(session)
@@ -42,7 +42,7 @@ async def list_entities(
 
 
 @router.get("/{entity_id}")
-async def get_entity(entity_id: str, _: dict = Depends(ReadOnly())):
+async def get_entity(entity_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         repo = BatteryEntityRepository(session)
         entity = await repo.get_by_id(uuid.UUID(entity_id))
@@ -71,7 +71,7 @@ async def get_entity(entity_id: str, _: dict = Depends(ReadOnly())):
 
 
 @router.get("/{entity_id}/properties")
-async def get_entity_properties(entity_id: str, _: dict = Depends(ReadOnly())):
+async def get_entity_properties(entity_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         repo = BatteryEntityRepository(session)
         entity = await repo.get_by_id(uuid.UUID(entity_id))
@@ -87,7 +87,7 @@ async def get_entity_properties(entity_id: str, _: dict = Depends(ReadOnly())):
 
 
 @router.get("/{entity_id}/cross-reference")
-async def get_entity_cross_reference(entity_id: str, _: dict = Depends(ReadOnly())):
+async def get_entity_cross_reference(entity_id: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         repo = BatteryEntityRepository(session)
         entity = await repo.get_by_id(uuid.UUID(entity_id))
@@ -103,7 +103,7 @@ async def get_entity_cross_reference(entity_id: str, _: dict = Depends(ReadOnly(
 
 
 @router.get("/by-part-number/{pn}")
-async def get_entity_by_part_number(pn: str, _: dict = Depends(ReadOnly())):
+async def get_entity_by_part_number(pn: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         repo = BatteryEntityRepository(session)
         entity = await repo.get_by_normalized_pn(pn.strip().upper())
@@ -118,7 +118,7 @@ async def get_entity_by_part_number(pn: str, _: dict = Depends(ReadOnly())):
 
 
 @router.post("/", status_code=201)
-async def create_entity(body: dict, _: dict = Depends(OperatorOrAdmin())):
+async def create_entity(body: dict, _: dict = Depends(operator_or_admin)):
     async with get_db_session() as session:
         repo = BatteryEntityRepository(session)
         entity, created = await repo.find_or_create_by_pn(

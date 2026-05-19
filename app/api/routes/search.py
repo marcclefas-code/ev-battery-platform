@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from typing import Optional
 import structlog
 from sqlalchemy import select, text
 from app.services.database import get_db_session
-from app.api.middleware.auth import ReadOnly
+from app.api.middleware.auth import read_only
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/search", tags=["search"])
@@ -15,7 +15,7 @@ async def cross_reference_search(
     entity_type: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
-    _: dict = Depends(ReadOnly()),
+    _: dict = Depends(read_only),
 ):
     async with get_db_session() as session:
         try:
@@ -42,7 +42,7 @@ async def cross_reference_search(
 
 
 @router.get("/part-number/{pn}")
-async def part_number_exact_match(pn: str, _: dict = Depends(ReadOnly())):
+async def part_number_exact_match(pn: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(
             text("""
@@ -64,7 +64,7 @@ async def vehicle_battery_search(
     model: str,
     year_from: Optional[int] = None,
     year_to: Optional[int] = None,
-    _: dict = Depends(ReadOnly()),
+    _: dict = Depends(read_only),
 ):
     async with get_db_session() as session:
         result = await session.execute(
@@ -84,7 +84,7 @@ async def vehicle_battery_search(
 
 
 @router.get("/superset/{pn}")
-async def supersession_chain(pn: str, _: dict = Depends(ReadOnly())):
+async def supersession_chain(pn: str, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(
             text("""

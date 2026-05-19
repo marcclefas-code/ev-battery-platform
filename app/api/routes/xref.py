@@ -7,7 +7,7 @@ from app.models.relationship import BatteryRelationship
 from app.models.entity import BatteryEntity
 from app.models.part_number import BatteryPartNumber
 from sqlalchemy import select
-from app.api.middleware.auth import ReadOnly, OperatorOrAdmin
+from app.api.middleware.auth import read_only, operator_or_admin
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/api/v1/xref", tags=["xref"])
@@ -22,14 +22,14 @@ class CrossReferenceRequest(BaseModel):
 
 
 @router.post("/")
-async def create_cross_reference(req: CrossReferenceRequest, _: dict = Depends(OperatorOrAdmin())):
+async def create_cross_reference(req: CrossReferenceRequest, _: dict = Depends(operator_or_admin)):
     xref_id = str(uuid.uuid4())
     logger.info("xref_created", xref_id=xref_id, source=req.source_pn, target_brand=req.target_brand)
     return {"xref_id": xref_id, "status": "pending", "source_pn": req.source_pn, "target_brand": req.target_brand}
 
 
 @router.get("/")
-async def list_cross_references(page: int = 1, page_size: int = 50, _: dict = Depends(ReadOnly())):
+async def list_cross_references(page: int = 1, page_size: int = 50, _: dict = Depends(read_only)):
     async with get_db_session() as session:
         result = await session.execute(
             select(BatteryRelationship)
@@ -42,5 +42,5 @@ async def list_cross_references(page: int = 1, page_size: int = 50, _: dict = De
 
 
 @router.get("/{xref_id}")
-async def get_cross_reference(xref_id: str, _: dict = Depends(ReadOnly())):
+async def get_cross_reference(xref_id: str, _: dict = Depends(read_only)):
     raise HTTPException(status_code=404, detail="Cross-reference not found")

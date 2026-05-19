@@ -60,6 +60,6 @@ def require_role(*roles):
     return JWTBearer(roles=list(roles))
 
 
-def AdminOnly(): return JWTBearer(["admin"])
-def OperatorOrAdmin(): return JWTBearer(["admin", "operator"])
-def ReadOnly(): return JWTBearer(["admin", "operator", "viewer"])
+def admin_only(): return JWTBearer(["admin"])
+def operator_or_admin(): return JWTBearer(["admin", "operator"])
+def read_only(): return JWTBearer(["admin", "operator", "viewer"])

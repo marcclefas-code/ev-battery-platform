@@ -8,7 +8,6 @@ logger = structlog.get_logger()
 
 try:
     from scrapling import Adaptor
-    from scrapling.fetchers import httpx_fetcher
     HAS_SCRAPLING = True
 except ImportError:
     HAS_SCRAPLING = False
