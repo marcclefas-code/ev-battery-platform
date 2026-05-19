@@ -1,8 +1,7 @@
 name: API Smoke Test
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   smoke-test:
@@ -11,51 +10,46 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
+      - name: Run smoke tests against deployed server
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install httpx uvicorn
-
-      - name: Run smoke tests
-        run: |
-          timeout 20 bash -c '
-          uvicorn app.main:app --host 127.0.0.1 --port 8090 &
-          UVICORN_PID=$!
-          sleep 5
-
           python -c "
 import httpx
+import sys
 
-client = httpx.Client(base_url="http://127.0.0.1:8090", timeout=10)
+client = httpx.Client(base_url='http://144.91.126.111:8090', timeout=15)
 
-r = client.get("/api/v1/health/")
-assert r.status_code == 200, f"health failed: {r.status_code}"
-print("OK: Health check")
+# Health check
+r = client.get('/api/v1/health/')
+assert r.status_code == 200, f'health failed: {r.status_code}'
+print('OK: Health check')
 
-r = client.post("/api/v1/auth/login", json={"username": "admin", "password": "admin-secret"})
-assert r.status_code == 200, f"login failed: {r.status_code}"
-token = r.json()["access_token"]
-print("OK: Login")
+# Login
+r = client.post('/api/v1/auth/login', json={'username': 'admin', 'password': 'admin-secret'})
+assert r.status_code == 200, f'login failed: {r.status_code}'
+token = r.json()['access_token']
+print('OK: Login')
 
-headers = {"Authorization": f"Bearer {token}"}
-r = client.get("/api/v1/entities/", headers=headers)
-assert r.status_code == 200
-print("OK: Entities")
+headers = {'Authorization': f'Bearer {token}'}
 
-r = client.get("/api/v1/config/brands", headers=headers)
-assert r.status_code == 200
-print("OK: Brands config")
+# Entities endpoint
+r = client.get('/api/v1/entities/', headers=headers)
+assert r.status_code == 200, f'entities failed: {r.status_code}'
+print('OK: Entities')
 
-print("All smoke tests passed!")
+# Brands config
+r = client.get('/api/v1/config/brands', headers=headers)
+assert r.status_code == 200, f'brands failed: {r.status_code}'
+print('OK: Brands config')
+
+# Scrape plans endpoint
+r = client.get('/api/v1/scrape/plans/', headers=headers)
+assert r.status_code == 200, f'scrape plans failed: {r.status_code}'
+print('OK: Scrape plans')
+
+# Vehicle variants
+r = client.get('/api/v1/vehicles/variants/', headers=headers)
+assert r.status_code == 200, f'vehicle variants failed: {r.status_code}'
+print('OK: Vehicle variants')
+
+print('All smoke tests passed!')
 "
-
-          kill $UVICORN_PID 2>/dev/null || true
-          '
