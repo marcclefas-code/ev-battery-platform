@@ -20,13 +20,21 @@ jobs:
         with:
           host: ${{ secrets.SERVER2_HOST }}
           username: root
-          key: ${{ secrets.SERVER2_SSH_KEY }}
+          password: ${{ secrets.SERVER2_SSH_PASSWORD }}
+          port: 22
           script: |
             set -e
             cd /opt/ev-battery-platform
-            git pull origin main
-            source venv/bin/activate 2>/dev/null || true
+            if [ ! -d .git ]; then
+              git clone https://github.com/marcclefas-code/ev-battery-platform.git .
+            else
+              git pull origin main
+            fi
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install --upgrade pip
             pip install -r requirements.txt
+            pip install hatchet-sdk
             alembic upgrade head || true
             python scripts/seed_property_definitions.py || true
             docker build -t ev-battery-platform:latest .
@@ -35,16 +43,19 @@ jobs:
             docker run -d \
               --name ev-battery-api \
               --restart unless-stopped \
+              --network=hatchet-network \
               -p 8090:8090 \
               -e DATABASE_URL="${DATABASE_URL}" \
               -e HATCHET_CLIENT_TOKEN="${HATCHET_CLIENT_TOKEN}" \
               -e HATCHET_CLIENT_HOST_PORT="${HATCHET_CLIENT_HOST_PORT}" \
               -e LITELLM_BASE_URL="${LITELLM_BASE_URL}" \
+              -e CRAWL4AI_URL="${CRAWL4AI_URL}" \
+              -e REDIS_URL="${REDIS_URL}" \
               -e SECRET_KEY="${SECRET_KEY}" \
               ev-battery-platform:latest
 
       - name: Smoke test after deploy
         run: |
-          sleep 15
-          curl -f http://144.91.126.111:8090/api/v1/health/ || exit 1
+          sleep 20
+          curl -sf http://144.91.126.111:8090/api/v1/health/ || { echo "Health check failed"; exit 1; }
           echo "Deploy smoke test passed"
