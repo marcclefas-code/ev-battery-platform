@@ -26,6 +26,10 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio httpx ruff
 
+      - name: Fix lint errors
+        run: |
+          ruff check app/ tests/ --fix
+
       - name: Lint with ruff
         run: |
           ruff check app/ tests/ --output-format=concise
