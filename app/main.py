@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import structlog
 
 from app.api.routes import scrape, entities, search, parts, vehicles, health, reviews, xref, waves, config, auth
-from app.api.middleware.request_logging import RequestLoggingMiddleware
+from app.api.middleware.logging import RequestLoggingMiddleware
 
 structlog.configure(processors=[])
 logger = structlog.get_logger()
