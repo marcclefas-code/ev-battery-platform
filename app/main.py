@@ -1,12 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import structlog
 
 from app.api.routes import scrape, entities, search, parts, vehicles, health, reviews, xref, waves, config, auth
 from app.api.middleware.logging import RequestLoggingMiddleware
-
-structlog.configure(processors=[])
-logger = structlog.get_logger()
 
 app = FastAPI(
     title="EV Battery Intelligence Platform",
@@ -43,7 +39,7 @@ async def root():
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("ev_battery_platform_starting")
+    print("EV Battery Platform starting...")
 
 
 @app.on_event("shutdown")
@@ -52,7 +48,7 @@ async def shutdown_event():
     from app.services.fetcher_registry import FetcherRegistry
     await FetcherRegistry.close_all()
     await dispose_engine()
-    logger.info("ev_battery_platform_shutdown")
+    print("EV Battery Platform shutting down...")
 
 
 if __name__ == "__main__":
