@@ -56,8 +56,13 @@ class BatteryEntityRepository:
         entity = await self.create(entity_type=entity_type, normalized_primary_part_number=normalized_pn)
         return entity, True
 
-    async def list_
-(self, entity_type: Optional[str] = None, brand: Optional[str] = None, page: int = 1, page_size: int = 50) -> tuple[list[BatteryEntity], int]:
+    async def list_(
+        self,
+        entity_type: Optional[str] = None,
+        brand: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 50,
+    ) -> tuple[list[BatteryEntity], int]:
         query = select(BatteryEntity).options(selectinload(BatteryEntity.part_numbers))
         count_query = select(func.count(BatteryEntity.id))
 

@@ -26,6 +26,7 @@ class FetcherRegistry:
         return cls._instances[name]
 
     @classmethod
-    async def close_all(cls):n        for instance in cls._instances.values():
+    async def close_all(cls):
+        for instance in cls._instances.values():
             await instance.close()
         cls._instances.clear()
