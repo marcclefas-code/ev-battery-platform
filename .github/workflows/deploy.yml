@@ -1,0 +1,50 @@
+name: Deploy to Server2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Server2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER2_HOST }}
+          username: root
+          key: ${{ secrets.SERVER2_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/ev-battery-platform
+            git pull origin main
+            source venv/bin/activate 2>/dev/null || true
+            pip install -r requirements.txt
+            alembic upgrade head || true
+            python scripts/seed_property_definitions.py || true
+            docker build -t ev-battery-platform:latest .
+            docker stop ev-battery-api 2>/dev/null || true
+            docker rm ev-battery-api 2>/dev/null || true
+            docker run -d \
+              --name ev-battery-api \
+              --restart unless-stopped \
+              -p 8090:8090 \
+              -e DATABASE_URL="${DATABASE_URL}" \
+              -e HATCHET_CLIENT_TOKEN="${HATCHET_CLIENT_TOKEN}" \
+              -e HATCHET_CLIENT_HOST_PORT="${HATCHET_CLIENT_HOST_PORT}" \
+              -e LITELLM_BASE_URL="${LITELLM_BASE_URL}" \
+              -e SECRET_KEY="${SECRET_KEY}" \
+              ev-battery-platform:latest
+
+      - name: Smoke test after deploy
+        run: |
+          sleep 15
+          curl -f http://144.91.126.111:8090/api/v1/health/ || exit 1
+          echo "Deploy smoke test passed"
