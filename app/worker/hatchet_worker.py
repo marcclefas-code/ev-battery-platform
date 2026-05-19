@@ -5,8 +5,8 @@ from datetime import datetime
 import uuid
 import yaml
 
-from hatchet import Hatchet
-from hatchet.client import WorkflowContext
+from hatchet_sdk import Hatchet
+from hatchet_sdk.client import WorkflowContext
 
 from app.services.fetcher_registry import FetcherRegistry
 from app.services.extractor import ExtractionEngine
