@@ -61,7 +61,31 @@ wave_policies:
     jitter_seconds: 10
     escalation_threshold: 0.3
     quorum_required: 1
+    fetcher_priority: ["crawl4ai"]
+
+  svolt_eu_com:
+    waves: 1
+    wave_delays_seconds: [0]
+    jitter_seconds: 30
+    escalation_threshold: 0.5
+    quorum_required: 1
+    fetcher_priority: ["crawl4ai"]
+
+  samsung_sdi_com:
+    waves: 2
+    wave_delays_seconds: [0, 90]
+    jitter_seconds: 30
+    escalation_threshold: 0.4
+    quorum_required: 1
     fetcher_priority: ["crawl4ai", "scrapling"]
+
+  varta_automotive_com:
+    waves: 1
+    wave_delays_seconds: [0]
+    jitter_seconds: 30
+    escalation_threshold: 0.5
+    quorum_required: 1
+    fetcher_priority: ["crawl4ai"]
 
 default_policy:
   waves: 2
