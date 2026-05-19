@@ -24,38 +24,42 @@ jobs:
           port: 22
           script: |
             set -e
+
+            # Clone/update repo
+            mkdir -p /opt/ev-battery-platform
             cd /opt/ev-battery-platform
             if [ ! -d .git ]; then
               git clone https://github.com/marcclefas-code/ev-battery-platform.git .
             else
               git pull origin main
             fi
-            python3 -m venv venv
-            source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt
-            pip install hatchet-sdk
-            alembic upgrade head || true
-            python scripts/seed_property_definitions.py || true
+
+            # Build Docker image
             docker build -t ev-battery-platform:latest .
+
+            # Stop and remove old container (ignore errors)
             docker stop ev-battery-api 2>/dev/null || true
             docker rm ev-battery-api 2>/dev/null || true
+
+            # Run new container on intelligence-internal network so it can reach:
+            # - intelligence-enrichment-crm-db:5432 (PostgreSQL)
+            # - hatchet-hatchet-engine-1:7070 (Hatchet engine)
+            # - intelligence-litellm:4000 (LiteLLM)
             docker run -d \
               --name ev-battery-api \
               --restart unless-stopped \
-              --network=hatchet-network \
+              --network=intelligence-internal \
               -p 8090:8090 \
-              -e DATABASE_URL="${DATABASE_URL}" \
-              -e HATCHET_CLIENT_TOKEN="${HATCHET_CLIENT_TOKEN}" \
-              -e HATCHET_CLIENT_HOST_PORT="${HATCHET_CLIENT_HOST_PORT}" \
-              -e LITELLM_BASE_URL="${LITELLM_BASE_URL}" \
-              -e CRAWL4AI_URL="${CRAWL4AI_URL}" \
-              -e REDIS_URL="${REDIS_URL}" \
-              -e SECRET_KEY="${SECRET_KEY}" \
+              -e DATABASE_URL="postgresql://ev_battery_user:ev_battery_pass@intelligence-enrichment-crm-db:5432/ev_battery" \
+              -e HATCHET_CLIENT_TOKEN="${{ secrets.HATCHET_CLIENT_TOKEN }}" \
+              -e HATCHET_CLIENT_HOST_PORT="hatchet-hatchet-engine-1:7070" \
+              -e HATCHET_CLIENT_TLS_STRATEGY="none" \
+              -e LITELLM_BASE_URL="http://intelligence-litellm:4000/v1" \
+              -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
               ev-battery-platform:latest
 
       - name: Smoke test after deploy
         run: |
-          sleep 20
+          sleep 25
           curl -sf http://144.91.126.111:8090/api/v1/health/ || { echo "Health check failed"; exit 1; }
           echo "Deploy smoke test passed"
