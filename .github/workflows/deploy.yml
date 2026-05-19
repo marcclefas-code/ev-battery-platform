@@ -39,12 +39,35 @@ jobs:
 
             # Stop and remove old container (ignore errors)
             docker rm -f ev-battery-api 2>/dev/null || true
+
+            # Force-remove any stuck container in Created state
+            STATE=$(docker inspect ev-battery-api --format='{{.State.Status}}' 2>/dev/null || echo "removed")
+            if [ "$STATE" = "created" ]; then
+              docker rm -f ev-battery-api 2>/dev/null || true
+            fi
+
+            # Wait for port 8090 to be free (up to 15s)
+            for i in $(seq 1 15); do
+              if ss -tlnp 2>/dev/null | grep -q ':8090 '; then
+                echo "Port 8090 still in use, waiting... ($i/15)"
+                sleep 1
+              else
+                echo "Port 8090 is free"
+                break
+              fi
+            done
+
+            # Kill any process still holding port 8090 using full path
+            /usr/bin/fuser -k 8090/tcp 2>/dev/null || true
             sleep 2
 
-            # Kill any process using port 8090
-            fuser -k 8090/tcp 2>/dev/null || true
-            ss -tlnp 2>/dev/null | grep ':8090 ' && kill -9 $(ss -tlnp 2>/dev/null | grep ':8090 ' | awk '{print $7}' | grep -oP '\d+' | head -1) 2>/dev/null || true
-            sleep 1
+            # Verify port is free before starting container
+            if ss -tlnp 2>/dev/null | grep -q ':8090 '; then
+              echo "ERROR: Port 8090 still in use after cleanup. Dumping port info:"
+              ss -tlnp | grep 8090 || true
+              docker ps -a | grep ev-battery || true
+              exit 1
+            fi
 
             # Export secrets for docker run
             export HATCHET_TOKEN='${{ secrets.HATCHET_CLIENT_TOKEN }}'
