@@ -51,21 +51,21 @@ jobs:
             export SECRET_KEY='${{ secrets.SECRET_KEY }}'
 
             # Run container with host networking so port 8090 binds directly on host.
-            # Then attach to intelligence-internal for DB/Hatchet reachability.
+            # Use --add-host so the container can resolve intelligence-enrichment-crm-db.
             docker run -d \
               --name ev-battery-api \
               --restart unless-stopped \
               --network=host \
-              -e DATABASE_URL="postgresql://ev_battery_user:ev_battery_pass@intelligence-enrichment-crm-db:5432/ev_battery" \
+              --add-host=intelligence-enrichment-crm-db:10.0.12.9 \
+              --add-host=hatchet-hatchet-engine-1:10.0.2.3 \
+              --add-host=intelligence-litellm:10.0.20.2 \
+              -e DATABASE_URL="postgresql+asyncpg://ev_battery_user:ev_battery_pass@intelligence-enrichment-crm-db:5432/ev_battery" \
               -e HATCHET_CLIENT_TOKEN="$HATCHET_TOKEN" \
               -e HATCHET_CLIENT_HOST_PORT="hatchet-hatchet-engine-1:7070" \
               -e HATCHET_CLIENT_TLS_STRATEGY="none" \
               -e LITELLM_BASE_URL="http://intelligence-litellm:4000/v1" \
               -e SECRET_KEY="$SECRET_KEY" \
               ev-battery-platform:latest
-
-            # Attach to intelligence-internal so app can reach DB, Hatchet, LiteLLM
-            docker network connect intelligence-internal ev-battery-api 2>/dev/null || true
 
       - name: Smoke test after deploy
         run: |
