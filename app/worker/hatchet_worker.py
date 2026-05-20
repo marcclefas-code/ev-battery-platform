@@ -67,7 +67,8 @@ def _patched_register_workflow(self, workflow_cls):
 
         return action_function
 
-    for action_name, action_func in workflow_cls.get_actions(namespace):
+    actions_method = workflow_instance.get_actions if workflow_instance else workflow_cls.get_actions
+    for action_name, action_func in actions_method(namespace):
         self.action_registry[action_name] = create_action_function(action_func)
 
 hatchet_sdk.worker.Worker.register_workflow = _patched_register_workflow

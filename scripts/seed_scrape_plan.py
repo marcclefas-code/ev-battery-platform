@@ -14,7 +14,7 @@ import structlog
 
 logger = structlog.get_logger()
 
-DATA_DIR = os.environ.get("BDN_DATA_DIR", r"C:\EVscraper\batterydesigndotnet")
+DATA_DIR = os.environ.get("BDN_DATA_DIR", "/app/scripts/data")
 PACK_FILE = os.path.join(DATA_DIR, "pack-benchmark-specification-BatteryDesignNET-v1.5-download.xlsx")
 
 OEM_TO_BRAND = {
