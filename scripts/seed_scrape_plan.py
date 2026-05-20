@@ -35,6 +35,44 @@ OEM_TO_BRAND = {
     "Jeep": "stellantis",
     "Chrysler": "stellantis",
     "Maserati": "stellantis",
+    "Acura": "honda",
+    "Audi": "vw_group",
+    "BMW": "bmw",
+    "Bentley": "vw_group",
+    "BYD": "byd",
+    "Citroen": "stellantis",
+    "Cupra": "vw_group",
+    "Dacia": "renault",
+    "Dongfeng": "dongfeng",
+    "Ford": "ford",
+    "Genesis": "hyundai",
+    "Honda": "honda",
+    "Hyundai": "hyundai",
+    "Kia": "hyundai",
+    "Lamborghini": "vw_group",
+    "Landwind": "landwind",
+    "Lexus": "toyota",
+    "Lincoln": "ford",
+    "Lucid": "lucid",
+    "Maserati": "stellantis",
+    "Mazda": "mazda",
+    "Mini": "bmw",
+    "Nissan": "nissan",
+    "Opel": "stellantis",
+    "Peugeot": "stellantis",
+    "Polestar": "volvo",
+    "Porsche": "porsche",
+    "Renault": "renault",
+    "Rivian": "rivian",
+    "Seat": "vw_group",
+    "Skoda": "vw_group",
+    "Smart": "mercedes",
+    "Subaru": "subaru",
+    "Tesla": "tesla",
+    "Toyota": "toyota",
+    "Volkswagen": "vw_group",
+    "Volvo": "volvo",
+    "XPeng": "xpeng",
 }
 
 BRAND_TO_POLICY = {
@@ -42,6 +80,24 @@ BRAND_TO_POLICY = {
     "jlr": "topix_jaguarlandrover_com",
     "porsche": "teile_com",
     "stellantis": "webautocats",
+    "honda": "webautocats",
+    "vw_group": "webautocats",
+    "bmw": "webautocats",
+    "byd": "webautocats",
+    "ford": "webautocats",
+    "hyundai": "webautocats",
+    "toyota": "webautocats",
+    "mazda": "webautocats",
+    "nissan": "webautocats",
+    "renault": "webautocats",
+    "subaru": "webautocats",
+    "tesla": "tesla_com",
+    "volvo": "webautocats",
+    "lucid": "webautocats",
+    "rivian": "webautocats",
+    "xpeng": "webautocats",
+    "dongfeng": "webautocats",
+    "landwind": "webautocats",
 }
 
 
@@ -62,12 +118,12 @@ async def seed_scrape_plan_from_packs() -> int:
 
     gap_rows = []
     for row in rows:
-        if not row or not row[3]:
+        if not row or not row[2]:
             continue
         try:
-            mfr = str(row[3]).strip() if row[3] else None
-            model = str(row[4]).strip() if row[4] else None
-            mfr_code = str(row[5]).strip() if row[5] else None
+            mfr = str(row[2]).strip() if row[2] else None
+            model = str(row[3]).strip() if row[3] else None
+            mfr_code = str(row[4]).strip() if row[4] else None
             if not mfr or not model or mfr in ("", "-", "Manufacturer"):
                 continue
             brand = OEM_TO_BRAND.get(mfr) or OEM_TO_BRAND.get(mfr.replace("-", " "))
