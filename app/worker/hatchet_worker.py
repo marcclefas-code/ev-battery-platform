@@ -1,9 +1,76 @@
+import base64
+import json
+import hatchet_sdk.token as _hatchet_token
+
+def _patched_extract_claims(token: str) -> dict:
+    try:
+        parts = token.strip().split(".")
+        if len(parts) != 3:
+            raise ValueError("Invalid token format")
+        segment = parts[1].replace(" ", "").replace("-", "+").replace("_", "/")
+        padding = segment + "=" * ((4 - len(segment) % 4) % 4)
+        decoded = base64.b64decode(padding)
+        return json.loads(decoded)
+    except Exception as e:
+        raise ValueError(f"Invalid token format: {e}")
+
+_hatchet_token.extract_claims_from_jwt = _patched_extract_claims
+
 import os
 import asyncio
+import sys
 import structlog
-from datetime import datetime
 import uuid
 import yaml
+
+import hatchet_sdk.worker
+import hatchet_sdk.context
+import hatchet_sdk.hatchet
+
+_original_register_workflow = hatchet_sdk.worker.Worker.register_workflow
+
+def _patched_register_workflow(self, workflow_cls):
+    """Patch for hatchet-sdk 0.38.x bug: get_name/get_create_opts are closures
+    defined in WorkflowMeta.__new__ that take 'self' and 'namespace', but when
+    called on the CLASS (not an instance), Python doesn't bind 'self'.
+    Fix: create an instance and call methods on the instance for proper descriptor binding."""
+    namespace = self.client.config.namespace
+
+    try:
+        workflow_instance = workflow_cls()
+    except TypeError:
+        workflow_instance = None
+
+    try:
+        if workflow_instance:
+            workflow_name = workflow_instance.get_name(namespace)
+            workflow_opts = workflow_instance.get_create_opts(namespace)
+        else:
+            workflow_name = workflow_cls.get_name(namespace)
+            workflow_opts = workflow_cls.get_create_opts(namespace)
+
+        self.client.admin.put_workflow(workflow_name, workflow_opts)
+    except Exception as e:
+        from hatchet_sdk.logger import logger
+        logger.error(f"failed to register workflow: {workflow_name if 'workflow_name' in dir() else 'unknown'}")
+        logger.error(e)
+        sys.exit(1)
+
+    def create_action_function(action_func):
+        def action_function(context):
+            return action_func(workflow_instance or workflow_cls, context)
+
+        if asyncio.iscoroutinefunction(action_func):
+            action_function.is_coroutine = True
+        else:
+            action_function.is_coroutine = False
+
+        return action_function
+
+    for action_name, action_func in workflow_cls.get_actions(namespace):
+        self.action_registry[action_name] = create_action_function(action_func)
+
+hatchet_sdk.worker.Worker.register_workflow = _patched_register_workflow
 
 from hatchet_sdk.loader import ClientConfig, ClientTLSConfig
 from hatchet_sdk.worker import Worker
@@ -14,9 +81,6 @@ from app.services.fetcher_registry import FetcherRegistry
 from app.services.extractor import ExtractionEngine
 from app.services.consensus_merger import ConsensusMerger
 from app.services.enrichment_service import EnrichmentService
-from app.services.database import get_db_session
-from app.services.repositories.battery_entity_repo import BatteryEntityRepository
-from app.services.repositories.scrape_plan_repo import ScrapePlanRepository
 from app.brand_adapters.porsche_adapter import PorscheAdapter
 from app.schemas.battery_scrape_payload import BatteryScrapePayload
 
@@ -24,7 +88,7 @@ logger = structlog.get_logger()
 
 HATCHET_CLIENT_TOKEN = os.getenv("HATCHET_CLIENT_TOKEN", "")
 HATCHET_CLIENT_HOST_PORT = os.getenv("HATCHET_CLIENT_HOST_PORT", "hatchet-hatchet-engine-1:7070")
-HATCHET_CLIENT_TLS_STRATEGY = os.getenv("HATCHET_CLIENT_TLS_STRATEGY", "none")
+HATCHET_CLIENT_TLS_STRATEGY = os.getenv("HATCHET_CLIENT_TLS_STRATEGY", "tls")
 LITELLM_BASE_URL = os.getenv("LITELLM_BASE_URL", "http://intelligence-litellm:4000/v1")
 
 STAGGER_CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "stagger_config.yaml")
@@ -49,7 +113,7 @@ def create_hatchet_worker() -> Worker:
         cert_file="",
         key_file="",
         ca_file="",
-        server_name="",
+        server_name=HATCHET_CLIENT_HOST_PORT.split(":")[0] if HATCHET_CLIENT_HOST_PORT else "localhost",
     )
 
     config = ClientConfig(
@@ -73,10 +137,10 @@ class StaggeredEnrichmentWF:
 
     @step(name="fetch-wave-0", timeout="10m")
     async def fetch_wave_0(self, context: Context) -> dict:
-        step_run = context.step_run()
-        pn = step_run.workflow_input().get("pn", "")
-        source_url = step_run.workflow_input().get("source_url", "")
-        entity_id = step_run.workflow_input().get("entity_id", "")
+        wf_input = context.workflow_input()
+        pn = wf_input.get("pn", "")
+        source_url = wf_input.get("source_url", "")
+        entity_id = wf_input.get("entity_id", "")
 
         logger.info("wf_fetch_wave_0", pn=pn, workflow_id=context.workflow_run_id())
 
@@ -99,10 +163,10 @@ class StaggeredEnrichmentWF:
 
     @step(name="fetch-wave-1", timeout="10m", parents=["fetch-wave-0"])
     async def fetch_wave_1(self, context: Context) -> dict:
-        step_run = context.step_run()
-        pn = step_run.workflow_input().get("pn", "")
-        source_url = step_run.workflow_input().get("source_url", "")
-        entity_id = step_run.workflow_input().get("entity_id", "")
+        wf_input = context.workflow_input()
+        pn = wf_input.get("pn", "")
+        source_url = wf_input.get("source_url", "")
+        entity_id = wf_input.get("entity_id", "")
 
         logger.info("wf_fetch_wave_1", pn=pn, workflow_id=context.workflow_run_id())
         await asyncio.sleep(300)
@@ -126,10 +190,11 @@ class StaggeredEnrichmentWF:
 
     @step(name="merge-results", timeout="5m", parents=["fetch-wave-1"])
     async def merge_results(self, context: Context) -> dict:
-        step_run = context.step_run()
-        wave_0_result = step_run.parent_step_run_outputs().get("fetch-wave-0", {})
-        wave_1_result = step_run.parent_step_run_outputs().get("fetch-wave-1", {})
-        entity_id = step_run.workflow_input().get("entity_id", "")
+        wf_input = context.workflow_input()
+        entity_id = wf_input.get("entity_id", "")
+
+        wave_0_result = context.step_output("fetch-wave-0")
+        wave_1_result = context.step_output("fetch-wave-1")
 
         logger.info("wf_merge_results", entity_id=entity_id, workflow_id=context.workflow_run_id())
 
@@ -160,10 +225,10 @@ class DeferredWaveWF:
 
     @step(name="deferred-fetch", timeout="15m")
     async def deferred_fetch(self, context: Context) -> dict:
-        step_run = context.step_run()
-        pn = step_run.workflow_input().get("pn", "")
-        source_url = step_run.workflow_input().get("source_url", "")
-        delay_seconds = step_run.workflow_input().get("delay_seconds", 0)
+        wf_input = context.workflow_input()
+        pn = wf_input.get("pn", "")
+        source_url = wf_input.get("source_url", "")
+        delay_seconds = wf_input.get("delay_seconds", 0)
 
         logger.info("wf_deferred_fetch", pn=pn, delay=delay_seconds, workflow_id=context.workflow_run_id())
         await asyncio.sleep(delay_seconds)

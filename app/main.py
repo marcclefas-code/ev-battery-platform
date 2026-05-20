@@ -1,3 +1,21 @@
+import base64
+import json
+import hatchet_sdk.token as _hatchet_token
+
+def _patched_extract_claims(token: str) -> dict:
+    try:
+        parts = token.strip().split(".")
+        if len(parts) != 3:
+            raise ValueError("Invalid token format")
+        segment = parts[1].replace(" ", "").replace("-", "+").replace("_", "/")
+        padding = segment + "=" * ((4 - len(segment) % 4) % 4)
+        decoded = base64.b64decode(padding)
+        return json.loads(decoded)
+    except Exception as e:
+        raise ValueError(f"Invalid token format: {e}")
+
+_hatchet_token.extract_claims_from_jwt = _patched_extract_claims
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
