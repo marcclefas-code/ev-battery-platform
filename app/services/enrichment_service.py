@@ -5,9 +5,11 @@ from app.services.database import get_db_session
 from app.services.repositories.battery_entity_repo import BatteryEntityRepository
 from app.services.repositories.scrape_plan_repo import ScrapePlanRepository
 from app.services.consensus_merger import ConsensusMerger
+from app.services.ev_battery_validator import EVBatteryValidator
 from app.schemas.battery_scrape_payload import BatteryScrapePayload
 
 logger = structlog.get_logger()
+validator = EVBatteryValidator()
 
 
 class EnrichmentService:
@@ -80,16 +82,39 @@ class EnrichmentService:
         async with get_db_session() as session:
             entity_repo = BatteryEntityRepository(session)
 
+            valid_pn_count = 0
+            invalid_pn_count = 0
+
             for pn_data in merged_payload.get("part_numbers", []):
-                await entity_repo.upsert_part_number(
-                    entity_id=entity_id,
-                    raw=pn_data["raw"],
-                    normalized=pn_data["normalized"],
-                    brand=pn_data["brand"],
-                    pn_type=pn_data.get("pn_type", "service"),
-                    source_url=merged_payload.get("_meta", {}).get("source_url"),
-                    evidence_quote=pn_data.get("evidence_quote"),
-                )
+                part_validation = await validator.validate_part({
+                    "normalized": pn_data.get("normalized", ""),
+                    "brand": pn_data.get("brand", ""),
+                    "pn_type": pn_data.get("pn_type", ""),
+                    "name": pn_data.get("name", ""),
+                    "source_url": merged_payload.get("_meta", {}).get("source_url", ""),
+                    "evidence_quote": pn_data.get("evidence_quote", ""),
+                })
+
+                if part_validation["is_valid"]:
+                    await entity_repo.upsert_part_number(
+                        entity_id=entity_id,
+                        raw=pn_data["raw"],
+                        normalized=pn_data["normalized"],
+                        brand=pn_data["brand"],
+                        pn_type=pn_data.get("pn_type", "service"),
+                        source_url=merged_payload.get("_meta", {}).get("source_url"),
+                        evidence_quote=pn_data.get("evidence_quote"),
+                    )
+                    valid_pn_count += 1
+                else:
+                    invalid_pn_count += 1
+                    self.logger.warning(
+                        "part_number_rejected_by_validation",
+                        normalized=pn_data.get("normalized"),
+                        brand=pn_data.get("brand"),
+                        reason=part_validation.get("reason"),
+                        warnings=part_validation.get("warnings", []),
+                    )
 
             for code, prop_data in merged_payload.get("properties", {}).items():
                 await entity_repo.upsert_property(
@@ -114,4 +139,9 @@ class EnrichmentService:
                     source_url=merged_payload.get("_meta", {}).get("source_url"),
                 )
 
-            self.logger.info("merged_payload_persisted", entity_id=str(entity_id))
+            self.logger.info(
+                "merged_payload_persisted",
+                entity_id=str(entity_id),
+                valid_pn_count=valid_pn_count,
+                invalid_pn_count=invalid_pn_count,
+            )
